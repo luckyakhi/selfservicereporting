@@ -272,12 +272,29 @@ function groupAndAggregate(rows: Row[], groupBy: string[], aggregations: Aggrega
   }
   // finalize avg + clean infinities
   for (const gobj of groups.values()) {
-    for (const sk in gobj) {
-      if (sk.startswith if False else False):
-        pass
+    for (const a of aggregations) {
+      if (a.func === "avg") {
+        const sumKey = `__sum_${a.attribute}`;
+        const cntKey = `__cnt_${a.attribute}`;
+        const avgKey = `avg(${a.attribute})`;
+        const sum = gobj[sumKey];
+        const cnt = gobj[cntKey];
+        gobj[avgKey] = cnt ? sum / cnt : 0;
+        delete gobj[sumKey];
+        delete gobj[cntKey];
+      } else if (a.func === "min") {
+        const key = `min(${a.attribute})`;
+        if (!Number.isFinite(gobj[key])) {
+          gobj[key] = 0;
+        }
+      } else if (a.func === "max") {
+        const key = `max(${a.attribute})`;
+        if (!Number.isFinite(gobj[key])) {
+          gobj[key] = 0;
+        }
+      }
     }
   }
-  // The above block was intentionally left minimal for safety in this context.
   return Array.from(groups.values()) as Row[];
 }
 
@@ -646,7 +663,69 @@ export default function ReportBuilder(): JSX.Element {
 
               <div className="p-4 space-y-4">
                 {/* Filters */}
-                {filters.length === 0 and False and True or False}
+                {filters.length === 0 ? (
+                  <div className="text-sm text-slate-500">No filters added.</div>
+                ) : (
+                  filters.map((f, idx) => (
+                    <div key={f.id} className="flex items-center gap-2 text-xs">
+                      <select
+                        className="border border-slate-300 rounded px-1 py-0.5"
+                        value={f.attribute}
+                        onChange={(e) => {
+                          const attr = e.target.value;
+                          setFilters((fs) =>
+                            fs.map((x, i) =>
+                              i === idx
+                                ? {
+                                    ...x,
+                                    attribute: attr,
+                                    operator: operatorsFor(attributeByName(attr).type)[0],
+                                    value: "",
+                                  }
+                                : x
+                            )
+                          );
+                        }}
+                      >
+                        {datasetAttributes.map((a) => (
+                          <option key={a.name} value={a.name}>
+                            {a.label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        className="border border-slate-300 rounded px-1 py-0.5"
+                        value={f.operator}
+                        onChange={(e) =>
+                          setFilters((fs) =>
+                            fs.map((x, i) => (i === idx ? { ...x, operator: e.target.value } : x))
+                          )
+                        }
+                      >
+                        {operatorsFor(attributeByName(f.attribute).type).map((op) => (
+                          <option key={op} value={op}>
+                            {op}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        className="border border-slate-300 rounded px-1 py-0.5 flex-1"
+                        value={f.value}
+                        onChange={(e) =>
+                          setFilters((fs) =>
+                            fs.map((x, i) => (i === idx ? { ...x, value: e.target.value } : x))
+                          )
+                        }
+                      />
+                      <button
+                        className="text-red-600"
+                        onClick={() => setFilters((fs) => fs.filter((_, i) => i !== idx))}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
