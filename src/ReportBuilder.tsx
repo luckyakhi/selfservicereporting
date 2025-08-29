@@ -518,6 +518,12 @@ export default function ReportBuilder(): JSX.Element {
             </button>
             <button
               className="px-3 py-1.5 rounded-lg text-sm bg-indigo-600 text-white hover:bg-indigo-700"
+              onClick={() => setRunKey((k) => k + 1)}
+            >
+              Preview
+            </button>
+            <button
+              className="px-3 py-1.5 rounded-lg text-sm bg-indigo-600 text-white hover:bg-indigo-700"
               onClick={() => {
                 const cfg = {
                   dataset: selectedDatasetId,
@@ -793,6 +799,34 @@ export default function ReportBuilder(): JSX.Element {
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Preview ({preview.rows.length} rows)</h3>
               <div className="text-xs text-slate-500">Dataset sample only — confirm logic before productionizing.</div>
+            </div>
+            <div className="mt-4 overflow-auto">
+              {preview.rows.length === 0 ? (
+                <div className="text-sm text-slate-500">No preview data.</div>
+              ) : (
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr>
+                      {preview.columns.map((c) => (
+                        <th key={c} className="border-b text-left p-1">
+                          {c}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.rows.map((r, idx) => (
+                      <tr key={idx} className="odd:bg-slate-50">
+                        {preview.columns.map((c) => (
+                          <td key={c} className="border-b p-1">
+                            {String(r[c])}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </section>
