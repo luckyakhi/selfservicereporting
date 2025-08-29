@@ -464,6 +464,14 @@ export default function ReportBuilder(): JSX.Element {
     ]);
   };
 
+  const addGroupBy = () => {
+    const firstNonNumeric = datasetAttributes.find(
+      (a) => !isNumericType(a.type) && a.type !== "number" && !groupBy.includes(a.name)
+    );
+    if (!firstNonNumeric) return;
+    setGroupBy((gs) => [...gs, firstNonNumeric.name]);
+  };
+
   const addAggregation = () => {
     const firstNumeric = datasetAttributes.find((a) => isNumericType(a.type) || a.type === "number");
     if (!firstNumeric) return;
@@ -656,76 +664,109 @@ export default function ReportBuilder(): JSX.Element {
                 <h3 className="font-medium">Filters, Grouping & Sort</h3>
                 <div className="flex gap-2">
                   <button className="text-xs px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200" onClick={addFilter}>+ Filter</button>
-                  <button className="text-xs px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200" onClick={() => setGroupBy(datasetAttributes.filter(a => a.type !== 'number').slice(0,1).map(a=>a.name))}>+ Group By</button>
+                  <button className="text-xs px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200" onClick={addGroupBy}>+ Group By</button>
                   <button className="text-xs px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200" onClick={addAggregation}>+ Aggregate</button>
                 </div>
               </div>
 
               <div className="p-4 space-y-4">
                 {/* Filters */}
-                {filters.length === 0 ? (
-                  <div className="text-sm text-slate-500">No filters added.</div>
-                ) : (
-                  filters.map((f, idx) => (
-                    <div key={f.id} className="flex items-center gap-2 text-xs">
-                      <select
-                        className="border border-slate-300 rounded px-1 py-0.5"
-                        value={f.attribute}
-                        onChange={(e) => {
-                          const attr = e.target.value;
-                          setFilters((fs) =>
-                            fs.map((x, i) =>
-                              i === idx
-                                ? {
-                                    ...x,
-                                    attribute: attr,
-                                    operator: operatorsFor(attributeByName(attr).type)[0],
-                                    value: "",
-                                  }
-                                : x
+                <div>
+                  {filters.length === 0 ? (
+                    <div className="text-sm text-slate-500">No filters added.</div>
+                  ) : (
+                    filters.map((f, idx) => (
+                      <div key={f.id} className="flex items-center gap-2 text-xs">
+                        <select
+                          className="border border-slate-300 rounded px-1 py-0.5"
+                          value={f.attribute}
+                          onChange={(e) => {
+                            const attr = e.target.value;
+                            setFilters((fs) =>
+                              fs.map((x, i) =>
+                                i === idx
+                                  ? {
+                                      ...x,
+                                      attribute: attr,
+                                      operator: operatorsFor(attributeByName(attr).type)[0],
+                                      value: "",
+                                    }
+                                  : x
+                              )
+                            );
+                          }}
+                        >
+                          {datasetAttributes.map((a) => (
+                            <option key={a.name} value={a.name}>
+                              {a.label}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          className="border border-slate-300 rounded px-1 py-0.5"
+                          value={f.operator}
+                          onChange={(e) =>
+                            setFilters((fs) =>
+                              fs.map((x, i) => (i === idx ? { ...x, operator: e.target.value } : x))
                             )
-                          );
-                        }}
-                      >
-                        {datasetAttributes.map((a) => (
-                          <option key={a.name} value={a.name}>
-                            {a.label}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className="border border-slate-300 rounded px-1 py-0.5"
-                        value={f.operator}
-                        onChange={(e) =>
-                          setFilters((fs) =>
-                            fs.map((x, i) => (i === idx ? { ...x, operator: e.target.value } : x))
-                          )
-                        }
-                      >
-                        {operatorsFor(attributeByName(f.attribute).type).map((op) => (
-                          <option key={op} value={op}>
-                            {op}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        className="border border-slate-300 rounded px-1 py-0.5 flex-1"
-                        value={f.value}
-                        onChange={(e) =>
-                          setFilters((fs) =>
-                            fs.map((x, i) => (i === idx ? { ...x, value: e.target.value } : x))
-                          )
-                        }
-                      />
-                      <button
-                        className="text-red-600"
-                        onClick={() => setFilters((fs) => fs.filter((_, i) => i !== idx))}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))
-                )}
+                          }
+                        >
+                          {operatorsFor(attributeByName(f.attribute).type).map((op) => (
+                            <option key={op} value={op}>
+                              {op}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="border border-slate-300 rounded px-1 py-0.5 flex-1"
+                          value={f.value}
+                          onChange={(e) =>
+                            setFilters((fs) =>
+                              fs.map((x, i) => (i === idx ? { ...x, value: e.target.value } : x))
+                            )
+                          }
+                        />
+                        <button
+                          className="text-red-600"
+                          onClick={() => setFilters((fs) => fs.filter((_, i) => i !== idx))}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Group By */}
+                <div>
+                  {groupBy.length === 0 ? (
+                    <div className="text-sm text-slate-500">No grouping applied.</div>
+                  ) : (
+                    groupBy.map((g, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs">
+                        <select
+                          className="border border-slate-300 rounded px-1 py-0.5"
+                          value={g}
+                          onChange={(e) =>
+                            setGroupBy((gs) => gs.map((x, i) => (i === idx ? e.target.value : x)))
+                          }
+                        >
+                          {nonNumericAttributes.map((a) => (
+                            <option key={a.name} value={a.name}>
+                              {a.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          className="text-red-600"
+                          onClick={() => setGroupBy((gs) => gs.filter((_, i) => i !== idx))}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>
